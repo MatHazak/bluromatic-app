@@ -27,7 +27,6 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.WorkerThread
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.renderscript.Allocation
 import androidx.renderscript.Element
 import androidx.renderscript.RenderScript
@@ -59,6 +58,17 @@ private const val TAG = "WorkerUtils"
  */
 fun makeStatusNotification(message: String, context: Context) {
 
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setContentTitle(NOTIFICATION_TITLE)
+        .setContentText(message)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setVibrate(LongArray(0))
+
+    // Create the notification
+    val notificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
     // Make a channel if necessary
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         // Create the NotificationChannel, but only on API 26+ because
@@ -70,22 +80,11 @@ fun makeStatusNotification(message: String, context: Context) {
         channel.description = description
 
         // Add the channel
-        val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
-
-        notificationManager?.createNotificationChannel(channel)
+        notificationManager.createNotificationChannel(channel)
     }
 
-    // Create the notification
-    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(NOTIFICATION_TITLE)
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setVibrate(LongArray(0))
-
     // Show the notification
-    NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
+    notificationManager.notify(NOTIFICATION_ID, builder.build())
 }
 
 /**
@@ -113,7 +112,8 @@ fun blurBitmap(bitmap: Bitmap, applicationContext: Context): Bitmap {
 
         // Create the output bitmap
         val output = Bitmap.createBitmap(
-                bitmap.width, bitmap.height, bitmap.config)
+            bitmap.width, bitmap.height, bitmap.config
+        )
 
         // Blur the image
         rsContext = RenderScript.create(applicationContext, RenderScript.ContextType.DEBUG)
