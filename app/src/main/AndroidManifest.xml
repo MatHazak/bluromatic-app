@@ -42,4 +42,11 @@
 
     </application>
 
+    <queries>
+        <package android:name="com.android.gallery" />
+        <package android:name="com.android.photos" />
+        <package android:name="com.google.android.apps.photos" />
+        <!-- Add other gallery apps if needed -->
+    </queries>
+
 </manifest>

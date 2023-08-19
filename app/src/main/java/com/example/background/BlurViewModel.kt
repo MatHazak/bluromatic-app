@@ -20,10 +20,13 @@ import android.app.Application
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.example.background.workers.BlurWorker
 import com.example.background.workers.CleanupWorker
@@ -33,9 +36,11 @@ import com.example.background.workers.SaveImageToFileWorker
 class BlurViewModel(application: Application) : ViewModel() {
 
     private var imageUri: Uri = getImageUri(application.applicationContext)
-    private var outputUri: Uri? = null
+    var outputUri: Uri? = null
 
     private val workManager = WorkManager.getInstance(application)
+    val outputWorkInfos: LiveData<List<WorkInfo>> =
+        workManager.getWorkInfosByTagLiveData(TAG_OUTPUT)
 
     /**
      * Create the WorkRequest to apply the blur and save the resulting image
@@ -43,14 +48,24 @@ class BlurViewModel(application: Application) : ViewModel() {
      */
     fun applyBlur(blurLevel: Int) {
         val clearRequest = OneTimeWorkRequest.from(CleanupWorker::class.java)
-        var continuation = workManager.beginWith(clearRequest)
+        var continuation = workManager.beginUniqueWork(
+            IMAGE_MANIPULATION_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            clearRequest
+        )
 
-        val blurRequest = OneTimeWorkRequest.Builder(BlurWorker::class.java)
-            .setInputData(createInputDataForUri(imageUri))
-            .build()
-        continuation = continuation.then(blurRequest)
+        val blurRequestBuilder = OneTimeWorkRequest.Builder(BlurWorker::class.java)
+
+        continuation = continuation.then(
+            blurRequestBuilder.setInputData(createInputDataForUri(imageUri)).build()
+        )
+
+        repeat(blurLevel - 1) {
+            continuation = continuation.then(blurRequestBuilder.build())
+        }
 
         val saveRequest = OneTimeWorkRequest.Builder(SaveImageToFileWorker::class.java)
+            .addTag(TAG_OUTPUT)
             .build()
         continuation = continuation.then(saveRequest)
 
