@@ -47,6 +47,7 @@ class BlurActivity : AppCompatActivity() {
                 }
             }
         }
+        binding.cancelButton.setOnClickListener { viewModel.cancelWork() }
         viewModel.outputWorkInfos.observe(this, ::workInfoObserver)
     }
 
@@ -57,12 +58,11 @@ class BlurActivity : AppCompatActivity() {
         if (workInfo.state.isFinished) {
             showWorkFinished()
             val outputUri = workInfo.outputData.getString(KEY_IMAGE_URI)
-            if (! outputUri.isNullOrEmpty()) {
+            if (!outputUri.isNullOrEmpty()) {
                 viewModel.setOutputUri(outputUri)
                 binding.seeFileButton.visibility = View.VISIBLE
             }
-        }
-        else
+        } else
             showWorkInProgress()
     }
 
